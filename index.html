@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Portafoglio titoli</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#f2f4f3;--ink:#1c2a29;--mut:#5d6c6a;--line:#d3dad8;--acc:#0f5c63;--pos:#2d7a4b;--neg:#b0412e}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 'IBM Plex Sans',system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.w{max-width:1080px;margin:0 auto;padding:0 16px 48px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:20px 0 12px}
+h1{font-size:20px;margin:0;font-weight:600}h2{font-size:16px;margin:0 0 10px;font-weight:600}
+.ctl{display:flex;flex-wrap:wrap;gap:8px}
+select,button,.b,input{font:inherit;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:6px;padding:6px 10px}
+button,.b{cursor:pointer}button.p{background:var(--acc);color:#fff;border-color:var(--acc)}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+details{border-top:1px solid var(--line);padding:10px 0}summary{cursor:pointer;font-weight:500}
+.f{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin:12px 0}
+.f label{display:grid;gap:4px;color:var(--mut)}.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+section{border-top:1px solid var(--line);padding:20px 0}
+.big{font-size:clamp(34px,8vw,56px);font-weight:600;margin:0;letter-spacing:-.02em;line-height:1.1}
+.strip{display:flex;height:14px;border-radius:3px;overflow:hidden;margin:16px 0 8px;gap:2px}.strip i{display:block;min-width:2px}
+.leg{display:flex;flex-wrap:wrap;gap:4px 16px;color:var(--mut);font-size:13px;margin:0}
+.leg b{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px}
+dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin:20px 0 0}
+dt{color:var(--mut);font-size:13px}dd{margin:0;font-size:18px;font-weight:500}
+.g2{display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}.cv{position:relative;height:300px}
+.n{color:var(--mut);font-size:13px;margin:8px 0 0}
+.t{overflow-x:auto}table{border-collapse:collapse;width:100%;white-space:nowrap}
+th,td{padding:7px 10px;text-align:right;border-bottom:1px solid var(--line)}
+th{cursor:pointer;color:var(--mut);font-weight:500;user-select:none}
+th:nth-child(-n+2),td:nth-child(-n+2){text-align:left}
+td:first-child,th:first-child{position:sticky;left:0;background:var(--bg)}
+td:first-child{max-width:190px;overflow:hidden;text-overflow:ellipsis}
+.pos{color:var(--pos)}.neg{color:var(--neg)}
+</style>
+</head>
+<body>
+<div class="w">
+<header>
+  <h1>Portafoglio titoli</h1>
+  <div class="ctl">
+    <select id="snap" aria-label="Data dei dati"></select>
+    <select id="acc" aria-label="Portafoglio"><option value="">Ordinario + lombard</option><option>Ordinario</option><option>Lombard</option></select>
+  </div>
+</header>
+
+<details id="up">
+  <summary>Aggiorna dati</summary>
+  <div class="f">
+    <label>Data dell’estrazione<input type="date" id="dt"></label>
+    <label>Portafoglio ordinario (.xls)<input type="file" id="f1" accept=".xls,.xlsx"></label>
+    <label>Portafoglio lombard (.xls)<input type="file" id="f2" accept=".xls,.xlsx"></label>
+  </div>
+  <div class="row">
+    <button class="p" id="sv">Salva dati</button>
+    <button id="exp">Esporta backup</button>
+    <label class="b">Importa backup<input type="file" id="imp" accept=".json" hidden></label>
+    <button id="del">Elimina la data selezionata</button>
+  </div>
+  <p class="n">I file vengono letti nel tuo browser e restano su questo dispositivo: non sono inviati né pubblicati. Se carichi un solo file, l’altro portafoglio resta com’era alla data precedente.</p>
+</details>
+<p class="n" id="msg" role="status"></p>
+
+<p id="empty" class="n">Nessun dato. Apri “Aggiorna dati”, scegli i file xls di Fineco e premi “Salva dati”.</p>
+
+<main id="main" hidden>
+  <section id="hero"></section>
+  <section>
+    <h2>Composizione</h2>
+    <div class="g2">
+      <div class="cv"><canvas id="c1"></canvas></div>
+      <div class="cv"><canvas id="c2"></canvas></div>
+    </div>
+  </section>
+  <section>
+    <h2>Valore nel tempo</h2>
+    <div class="cv"><canvas id="c3"></canvas></div>
+    <p class="n" id="hnote">C’è una sola data: carica i file in date diverse per costruire lo storico.</p>
+  </section>
+  <section>
+    <h2>Scadenze dei BTP e cedole</h2>
+    <div class="cv"><canvas id="c4"></canvas></div>
+    <p class="n">Le cedole di ogni anno sono quelle dei titoli non ancora scaduti, in lordo, senza reinvestimenti. Scadenza e cedola sono lette dal nome del titolo.</p>
+  </section>
+  <section>
+    <h2>Titoli</h2>
+    <div class="t"><table id="tbl"></table></div>
+    <p class="n">Plusvalenza = valore di mercato − valore di carico, quindi include la rivalutazione dei BTPI. Imposta latente: solo sulle plusvalenze, senza compensare le minusvalenze (12,5% BTP, 26% il resto). Leva fiscale = imposta latente / valore. Il rateo non è incluso nel valore di mercato.</p>
+  </section>
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+const TAX={bond:.125,other:.26},KEY='pf_v1',$=i=>document.getElementById(i);
+// classe e area per ISIN; i titoli non elencati sono classificati in automatico
+const CLS={IE00B4L5Y983:['Azionario','Mondo'],IE00B5BMR087:['Azionario','USA'],IE00B53SZB19:['Azionario','USA'],XS2427355958:['Azionario','USA'],XS2427362145:['Azionario','Europa'],IE00077IIPQ8:['Multi-asset','Mondo'],LU2951555403:['Alternativi','Globale'],IE00B579F325:['Oro','Globale'],JE00B1VS3333:['Argento','Globale'],GB00BJYDH287:['Bitcoin','Globale']};
+const CC={Azionario:'#0f5c63',Obbligazionario:'#5b7db1','Multi-asset':'#7e6aa8',Alternativi:'#8a8f98',Oro:'#c9a227',Argento:'#aab4be',Bitcoin:'#e0813b'};
+const AC=['#0f5c63','#5b7db1','#c9a227','#e0813b','#7e6aa8','#8a8f98','#b0412e'];
+const cur0=o=>({style:'currency',currency:'EUR',maximumFractionDigits:0,...o}),pc0=o=>({style:'percent',minimumFractionDigits:1,maximumFractionDigits:1,...o});
+const nf=new Intl.NumberFormat('it-IT',cur0()),nS=new Intl.NumberFormat('it-IT',cur0({signDisplay:'exceptZero'})),
+pf=new Intl.NumberFormat('it-IT',pc0()),ps=new Intl.NumberFormat('it-IT',pc0({signDisplay:'exceptZero'}));
+let D=load(),cur=null,sk='v',sd=-1,ch={},PP=[];
+function load(){try{return JSON.parse(localStorage.getItem(KEY))||{s:[]}}catch(e){return{s:[]}}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){msg('Il browser non ha salvato i dati: esporta un backup.')}}
+const msg=t=>{$('msg').textContent=t};
+const E=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const N=x=>typeof x=='number'?x:parseFloat(String(x||0).replace(/\./g,'').replace(',','.'))||0;
+const sum=(P,f)=>P.reduce((a,x)=>a+f(x),0);
+const by=(P,k)=>Object.entries(P.reduce((m,x)=>(m[x[k]]=(m[x[k]]||0)+x.v,m),{})).sort((a,b)=>b[1]-a[1]);
+const mk=(id,cfg)=>{ch[id]&&ch[id].destroy();ch[id]=new Chart($(id),cfg)};
+const fd=d=>d.split('-').reverse().join('/');
+
+async function parse(f){
+  const wb=XLSX.read(await f.arrayBuffer(),{type:'array'}),a=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:null}),h=a.findIndex(r=>r.includes('ISIN'));
+  if(h<0)throw Error('non trovo la colonna ISIN in '+f.name);
+  const H=a[h].map(x=>String(x||'').trim()),g=(r,p)=>r[H.findIndex(x=>x.startsWith(p))];
+  return a.slice(h+1).filter(r=>r[H.indexOf('ISIN')]).map(r=>({isin:g(r,'ISIN'),n:String(g(r,'Titolo')).trim(),t:g(r,'Strumento'),q:N(g(r,'Quantit')),k:N(g(r,'Valore di c')),p:N(g(r,'P.zo di m')),v:N(g(r,'Valore di m')),ra:N(g(r,'Rateo'))}));
+}
+
+// unisce i portafogli per ISIN e calcola gli indicatori di ogni titolo
+function pos(s,acc){
+  const m={};
+  Object.entries(s.a).forEach(([a,rs])=>{if(acc&&a!=acc)return;rs.forEach(r=>{const x=m[r.isin]||(m[r.isin]={...r,q:0,k:0,v:0,ra:0});x.q+=r.q;x.k+=r.k;x.v+=r.v;x.ra+=r.ra})});
+  return Object.values(m).map(x=>{
+    const b=x.t=='Obbligazione',[cl,ar]=CLS[x.isin]||(b?['Obbligazionario',{IT:'Italia',FR:'Francia'}[x.isin.slice(0,2)]||x.isin.slice(0,2)]:['Altro','Altro']);
+    const g=x.v-x.k,tx=b?TAX.bond:TAX.other,mt=b&&x.n.match(/-(\d{1,2})([A-Z]{2})(\d{2})\b/),cp=b&&x.n.match(/\s(\d+(?:,\d+)?)(?:\s+GREEN)?\s*$/i),co=x.p&&x.q?x.v/(x.q*x.p/100):1;
+    return{...x,cl,ar,g,gp:x.k?g/x.k:0,lat:Math.max(0,g)*tx,lv:x.v?Math.max(0,g)*tx/x.v:0,m:mt?2000+ +mt[3]:0,c:cp?co*x.q*parseFloat(cp[1].replace(',','.'))/100:0};
+  });
+}
+
+const C=[['n','Titolo',x=>E(x.n)],['cl','Classe',x=>x.cl],['v','Valore',x=>nf.format(x.v)],['w','Peso',x=>pf.format(x.w)],['k','Carico',x=>nf.format(x.k)],
+['g','Plusv.',x=>nS.format(x.g),x=>x.g],['gp','Plusv. %',x=>ps.format(x.gp),x=>x.g],['lv','Leva fiscale',x=>pf.format(x.lv)],['m','Scadenza',x=>x.m||'–'],['c','Cedola/anno',x=>x.c?nf.format(x.c):'–']];
+function table(){
+  const R=PP.slice().sort((a,b)=>sd*(typeof a[sk]=='string'?a[sk].localeCompare(b[sk]):a[sk]-b[sk]));
+  $('tbl').innerHTML='<tr>'+C.map(c=>`<th>${c[1]}${c[0]==sk?(sd>0?' ↑':' ↓'):''}</th>`).join('')+'</tr>'+
+    R.map(x=>'<tr>'+C.map((c,i)=>`<td${i==0?` title="${E(x.n)}"`:''}${c[3]?` class="${c[3](x)>=0?'pos':'neg'}"`:''}>${c[2](x)}</td>`).join('')+'</tr>').join('');
+  $('tbl').querySelectorAll('th').forEach((th,i)=>th.onclick=()=>{const k=C[i][0];sd=sk==k?-sd:(typeof PP[0][k]=='string'?1:-1);sk=k;table()});
+}
+
+function render(){
+  const has=D.s.length;
+  $('empty').hidden=!!has;$('main').hidden=!has;
+  if(!has){$('snap').innerHTML='';$('up').open=true;return}
+  if(!cur||!D.s.find(x=>x.d==cur))cur=D.s[D.s.length-1].d;
+  $('snap').innerHTML=D.s.slice().reverse().map(x=>`<option value="${x.d}">${fd(x.d)}</option>`).join('');$('snap').value=cur;
+  const acc=$('acc').value,s=D.s.find(x=>x.d==cur),P=pos(s,acc);PP=P;
+  const V=sum(P,x=>x.v),K=sum(P,x=>x.k),G=V-K,RA=sum(P,x=>x.ra),LAT=sum(P,x=>x.lat),CU=sum(P,x=>x.c);
+  P.forEach(x=>x.w=V?x.v/V:0);
+  const cl=by(P,'cl'),ar=by(P,'ar'),col=n=>CC[n]||'#999';
+  $('hero').innerHTML=`<p class="big">${nf.format(V)}</p>
+  <p>Dati del ${fd(cur)}: <span class="${G>=0?'pos':'neg'}">${nS.format(G)} (${ps.format(K?G/K:0)})</span> rispetto a un carico di ${nf.format(K)}</p>
+  <div class="strip">${cl.map(([n,v])=>`<i style="flex:${v};background:${col(n)}" title="${n}"></i>`).join('')}</div>
+  <p class="leg">${cl.map(([n,v])=>`<span><b style="background:${col(n)}"></b>${n} ${pf.format(v/V)}</span>`).join('')}</p>
+  <dl><div><dt>Imposta latente</dt><dd>${nf.format(LAT)}</dd></div><div><dt>Valore netto dopo imposta</dt><dd>${nf.format(V-LAT)}</dd></div>
+  <div><dt>Leva fiscale</dt><dd>${pf.format(V?LAT/V:0)}</dd></div><div><dt>Rateo maturato</dt><dd>${nf.format(RA)}</dd></div>
+  <div><dt>Cedole lorde all’anno</dt><dd>${nf.format(CU)}</dd></div><div><dt>Cedole nette all’anno</dt><dd>${nf.format(CU*(1-TAX.bond))}</dd></div></dl>`;
+  const dn=(id,e,cf)=>mk(id,{type:'doughnut',data:{labels:e.map(x=>x[0]),datasets:[{data:e.map(x=>x[1]),backgroundColor:e.map((x,i)=>cf(x[0],i)),borderWidth:1}]},
+    options:{maintainAspectRatio:false,plugins:{title:{display:true,text:id=='c1'?'Per classe':'Per area geografica'},legend:{position:'bottom'},tooltip:{callbacks:{label:c=>` ${c.label}: ${nf.format(c.parsed)} (${pf.format(c.parsed/V)})`}}}}});
+  dn('c1',cl,n=>col(n));dn('c2',ar,(n,i)=>AC[i%AC.length]);
+  const H=D.s.map(x=>{const R=pos(x,acc);return[x.d,sum(R,y=>y.v),sum(R,y=>y.k)]});
+  mk('c3',{type:'line',data:{labels:H.map(h=>fd(h[0])),datasets:[{label:'Valore di mercato',data:H.map(h=>h[1]),borderColor:'#0f5c63',backgroundColor:'#0f5c6322',fill:true,tension:.2},{label:'Valore di carico',data:H.map(h=>h[2]),borderColor:'#8a8f98',borderDash:[5,4],pointRadius:2}]},
+    options:{maintainAspectRatio:false,scales:{y:{ticks:{callback:v=>nf.format(v)}}},plugins:{tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${nf.format(c.parsed.y)}`}}}}});
+  $('hnote').hidden=H.length>1;
+  const BD=P.filter(x=>x.m),Y=[...new Set(BD.map(x=>x.m))].sort(),tk={callback:v=>nf.format(v)};
+  mk('c4',{type:'bar',data:{labels:Y,datasets:[{type:'bar',label:'Rimborso (nominale)',data:Y.map(y=>sum(BD.filter(x=>x.m==y),x=>x.q)),backgroundColor:'#0f5c63',yAxisID:'y'},
+    {type:'line',label:'Cedole lorde annue in corso',data:Y.map(y=>sum(BD.filter(x=>x.m>=y),x=>x.c)),borderColor:'#c9a227',backgroundColor:'#c9a227',yAxisID:'y2',stepped:true}]},
+    options:{maintainAspectRatio:false,scales:{y:{ticks:tk},y2:{position:'right',grid:{drawOnChartArea:false},ticks:tk}},plugins:{tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${nf.format(c.parsed.y)}`}}}}});
+  table();
+}
+
+// carica i file: ogni data è una fotografia del portafoglio
+$('sv').onclick=async()=>{
+  const d=$('dt').value,F={Ordinario:$('f1').files[0],Lombard:$('f2').files[0]};
+  if(!d)return msg('Indica la data dell’estrazione.');
+  if(!F.Ordinario&&!F.Lombard)return msg('Scegli almeno un file .xls.');
+  try{
+    const n={};for(const[k,f]of Object.entries(F))if(f)n[k]=await parse(f);
+    let s=D.s.find(x=>x.d==d);
+    if(!s){const p=D.s.filter(x=>x.d<d).pop();s={d,a:p?JSON.parse(JSON.stringify(p.a)):{}};D.s.push(s);D.s.sort((a,b)=>a.d<b.d?-1:1)}
+    Object.assign(s.a,n);save();cur=d;render();msg('Dati del '+fd(d)+' salvati.');$('f1').value=$('f2').value='';
+  }catch(e){msg('Errore: '+e.message)}
+};
+$('del').onclick=()=>{if(cur&&confirm('Eliminare i dati del '+fd(cur)+'?')){D.s=D.s.filter(x=>x.d!=cur);cur=null;save();render()}};
+$('snap').onchange=e=>{cur=e.target.value;render()};$('acc').onchange=render;
+
+// backup cifrabile con password, per spostare i dati tra telefono e tablet
+const B=u=>{let s='';u.forEach(x=>s+=String.fromCharCode(x));return btoa(s)},U=b=>Uint8Array.from(atob(b),c=>c.charCodeAt(0));
+const K=(pw,s)=>crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']).then(m=>crypto.subtle.deriveKey({name:'PBKDF2',salt:s,iterations:200000,hash:'SHA-256'},m,{name:'AES-GCM',length:256},false,['encrypt','decrypt']));
+async function enc(t,pw){const s=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12)),c=await crypto.subtle.encrypt({name:'AES-GCM',iv},await K(pw,s),new TextEncoder().encode(t));return JSON.stringify({enc:1,s:B(s),iv:B(iv),c:B(new Uint8Array(c))})}
+async function dec(j,pw){try{return new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:U(j.iv)},await K(pw,U(j.s)),U(j.c)))}catch(e){throw Error('password errata')}}
+$('exp').onclick=async()=>{
+  const pw=prompt('Password per cifrare il backup (lascia vuoto per non cifrarlo):');if(pw===null)return;
+  const t=pw?await enc(JSON.stringify(D),pw):JSON.stringify(D),a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([t],{type:'application/json'}));a.download='portafoglio-backup.json';a.click();
+};
+$('imp').onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;
+  try{
+    let j=JSON.parse(await f.text());
+    if(j.enc)j=JSON.parse(await dec(j,prompt('Password del backup:')||''));
+    if(!j.s)throw Error('file non valido');
+    if(!confirm('Sostituire i dati di questo dispositivo con il backup ('+j.s.length+' date)?'))return;
+    D=j;cur=null;save();render();msg('Backup importato.');
+  }catch(err){msg('Backup non leggibile: '+err.message)}
+  e.target.value='';
+};
+
+$('dt').value=new Date().toISOString().slice(0,10);
+render();
+</script>
+</body>
+</html>
